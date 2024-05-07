@@ -1,0 +1,82 @@
+from telethon import TelegramClient,events,types,sync,errors
+import asyncio
+import json
+
+
+api_id = 'api_id'
+
+api_hash = 'api_hash'
+
+#запускаю клиента
+client = TelegramClient('Usersession',api_id,api_hash)
+client.start()
+
+class BotState:
+#записываю ранние приветсвия в переменную
+    greetings = False
+#создаю список пользователей , которых бот уже приветствовал
+    greeted_users = []
+    jsgreeted = json.dumps(greeted_users)
+    def __init__(self):
+        self.load_greeted_users()
+#открываю и читаю файл с пользователями, которых уже приветствовал
+    def load_greeted_users(self):
+        try:
+            with open('jsgreeted.json','r') as file:
+                self.jsgreeted = json.load(file)
+        except FileNotFoundError:
+            self.jsgreeted = []
+#записываю в файл новых пользователей , каждый раз после приветствия
+    def save_greeted_users(self):
+        with open('jsgreeted.json','w') as file:
+            json.dump(self.jsgreeted,file)
+
+bot_state = BotState()
+
+#вступительное сообщение со сслыкой на мастера
+@client.on(events.NewMessage())
+async def handler(event):
+# event.is_private это личные сообщения , чтобы бот не отвечал в чатах , также проверяю , было ли до этого ознаком. сообщение
+    if event.is_private and event.sender_id not in bot_state.jsgreeted:
+        await event.respond('Привет, я userbot!\nПо всем вопросам:@username')
+        bot_state.jsgreeted.append(event.sender_id)
+        bot_state.save_greeted_users()
+
+FixRepwords = ['ремонт','починить','техник','починить айфон','заменить','мастер по ремонту','замена экрана','заменить батарею',
+               'не включается','не запускается','сломался телефон','сломался ноутбук','починить ноутбук',
+               'починить телефон','ремонт техники','Не работает экран','Не работает экран','лагает пк',
+               'залил телефон','залил ноутбук','утонул телефон','утонул ноутбук','утопили телефон','утопили ноутбук',
+              'не загружается система','проблема с пк','уронили телефон','упал телефон','намок телефон',
+               'Телефон упал на кафель, перестал включаться','HDMI не выводит изображение на телек',
+               'аккумулятор перестал держать','телефон не держит заряд','проблема с экраном','проблема с аккумулятором',
+               'проблемы с аккумулятором','не знаете мастера','перестал включаться телефон',
+               'ремонтом телефонов','телефон упал','поломка телефона','поломку телефона','поломка ноутбука',
+               'почистить ноутбук','почистить компьютер','почистить кулер','ноутбук не включается','компьютер не включается',
+               'уронил телефон']
+@client.on(events.NewMessage())
+async def Newchatmess(event):
+    global FixRepwords
+#any проверяет есть ли в сообщении хотябы один элемент из списка ремонтных слов
+    try:
+        if event.is_group  and any (word in event.raw_text.lower() for word in FixRepwords):
+            await event.reply('Привет, у меня в профиле ссылка на мастера по ремонту техники\nя юзербот :)')
+    except:
+        await client.send_message(event.sender_id,'Привет, мастер по ремонту техники у меня в профиле, так-же он пишет код на python\nя юзербот :)')
+
+#словарь для разраб деятельности
+#здесь я фильтрую чаты на поиск разработчиков
+Devwords = ['пишет код','писать код','требуется разработчик','ищу разработчиков','автоматизация','автоматизации',
+            'ищу разработчика','трубуются разработчики','нужен python-программист','нужен программист на python']
+@client.on(events.NewMessage())
+async def NewDevMess(event):
+    global Devwords
+    try:
+        if event.is_group and any(word in event.raw_text.lower() for word in Devwords):
+            await event.reply('python-программист у меня в профиле\nя юзербот :)')
+    except:
+        await client.send_message(event.sender_id,' Привет, мастер по ремонту техники у меня в профиле, так-же он пишет код на python\nя юзербот :)')
+
+#    elif 'ремонт' in event.raw_text.lower():
+#        print('Напишите тип устройства,\nмодель\nи характер проблемы')
+
+client.run_until_disconnected()
